@@ -1,8 +1,8 @@
 /**
  * Created by Phaeton on 21.05.2016.
  */
-var handle = require("./handler");
-var handleError = require("./errorHandler")
+var handle = require("handlers/handler");
+var handleError = require("handlers/errorHandler")
 var url = require("url");
 
 module.exports = function (req, res) {

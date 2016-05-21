@@ -1,7 +1,7 @@
 /**
  * Created by Phaeton on 21.05.2016.
  */
-var errors = require("./errors");
+var errors = require("errors/errors");
 
 function handleEmptyURL(parameters) {
     var res = parameters.res;
