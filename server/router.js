@@ -4,11 +4,13 @@
 var handle = require("handlers/handler");
 var handleError = require("handlers/errorHandler")
 var url = require("url");
+var log = require("lib/log")(module);
 
 module.exports = function (req, res) {
-    var pathname = url.parse(req.url).pathname;
+    var reqParsed = url.parse(req.url);
+    var pathname = reqParsed.pathname;
+    log.debug(req.method + " " + pathname);
 
-    console.log (pathname);
     if (handle[pathname] instanceof Function) {
         var parameters = {
             req: req,
