@@ -49,6 +49,8 @@ function getType (ext) {
             return "text/css";
         case "js":
             return "text/javascript";
+        default:
+            return "text/plain";
     };
 };
 
