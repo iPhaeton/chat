@@ -57,6 +57,8 @@ function* createDB () {
 	yield open();
 	yield dropDataBase();
 	yield createUsers();
+	
+	mongoose.disconnect(err => console.log(err.message));
 };
 
 function execute (generator, yieldValue) {
