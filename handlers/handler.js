@@ -6,6 +6,7 @@ var url = require("url");
 var fs = require("fs");
 var handleError = require("handlers/errorHandler");
 var jade = require("jade");
+var User = require("models/user").User;
 
 function sendFile(path, parameters) {
     var file = new fs.ReadStream(path);
@@ -62,7 +63,55 @@ function handleForbiddenURL(parameters) {
     throw new errors.RequestError(401, "Access denied");
 };
 
+//---------------------------------------------------------------------------------------------------------------
+function findUsers(parameters) {
+    if (!(parameters instanceof Object)) throw new errors.RequestError(400, "Bad request");
+
+    var res = parameters.res;
+
+    User.find({}, function (err, users) {
+        if (err) handleError(err, parameters);
+
+        res.end(prettifyJson(users));
+    });
+};
+
+function findUser (path, parameters) {
+    var res = parameters.res;
+    var id = path.split("/")[2];
+
+    User.findById(id, function (err, user) {
+        if (err) handleError(err);
+        if (!user) handleError(new errors.RequestError(404, "User not found"), parameters);
+
+        res.end(prettifyJson(user));
+    })
+};
+
+function prettifyJson (obj) {
+    try {
+        var str = JSON.stringify(obj);
+    } catch (err) {
+        handleError(err);
+    };
+
+    str = str.split(",");
+    for (var i = 0; i < str.length; i++) {
+        str[i] += ",\n";
+    };
+    str = str.join("");
+
+    str = str.split("},");
+    for (var i = 0; i < str.length; i++) {
+        str[i] += "},\n";
+    };
+    return str.join("").slice(0, -5);
+};
+
+//-------------------------------------------------------------------------------------------------------
 exports["/"] = sendIndex;
 exports["/forbidden"] = handleForbiddenURL;
+exports["/users"] = findUsers;
+exports["/user"]  = findUser;
 
 exports.file = sendFile;

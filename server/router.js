@@ -16,6 +16,8 @@ var paths = {
 module.exports = function (req, res) {
     var reqParsed = url.parse(req.url);
     var pathname = reqParsed.pathname;
+    var pathnameParsed = "/" + pathname.split("/")[1];
+
     log.debug(req.method + " " + pathname);
 
     if (handle[pathname] instanceof Function) {
@@ -25,6 +27,18 @@ module.exports = function (req, res) {
         };
         try{
             handle[pathname](parameters);
+        }
+        catch (error) {
+            handleError(error, parameters);
+        };
+    }
+    else if (handle[pathnameParsed] instanceof Function) {
+        var parameters = {
+            req: req,
+            res: res
+        };
+        try{
+            handle[pathnameParsed](pathname, parameters);
         }
         catch (error) {
             handleError(error, parameters);

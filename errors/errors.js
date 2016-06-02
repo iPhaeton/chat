@@ -2,11 +2,12 @@
  * Created by Phaeton on 21.05.2016.
  */
 var util = require("util");
+var http = require("http");
 
 //Request errors
 function RequestError (statusCode, message) {
     this.statusCode = statusCode;
-    this.message = message;
+    this.message = message || http.STATUS_CODES[statusCode] || "Error";
     Error.captureStackTrace(this, RequestError);
 };
 util.inherits(RequestError, Error);
