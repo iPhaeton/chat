@@ -2,13 +2,14 @@
  * Created by Phaeton on 21.05.2016.
  */
 var errors = require("errors/errors");
+var handleError = require("handlers/errorHandler");
 var url = require("url");
 var fs = require("fs");
-var handleError = require("handlers/errorHandler");
 var jade = require("jade");
 var User = require("models/user").User;
+var checkPath = require("lib/checkPath");
 
-function sendFile(path, parameters) {
+function sendFile(path, parameters, outputOptions) {
     var file = new fs.ReadStream(path);
     var res = parameters.res;
     var data = "";
@@ -21,9 +22,16 @@ function sendFile(path, parameters) {
     });
 
     file.on ("end", function () {
-        if (ext === "jade") data = jade.render(data, {basedir: "templates"});
+        if (ext === "jade") {
+            if (!outputOptions) {
+                outputOptions = {basedir: "templates"}
+            } else {
+                outputOptions.basedir = "templates"
+            };
+            data = jade.render(data, outputOptions);
+        };
 
-        res.statusCode = 200;
+        res.statusCode = parameters.statusCode || 200;
         res.setHeader("Content-Type", type);
         res.end(data);
     });
@@ -56,7 +64,7 @@ function getType (ext) {
 };
 
 function sendIndex(parameters) {
-    sendFile("templates/index.jade", parameters);
+    sendFile("templates/index.jade", parameters, {});
 };
 
 function handleForbiddenURL(parameters) {
@@ -78,13 +86,12 @@ function findUsers(parameters) {
 
 function findUser (path, parameters) {
     var res = parameters.res;
-    var id = path.split("/")[2];
+    var id = path.split(":")[1];
 
     User.findById(id, function (err, user) {
         if (err) handleError(err);
         if (!user) handleError(new errors.RequestError(404, "User not found"), parameters);
-
-        res.end(prettifyJson(user));
+        else res.end(prettifyJson(user));
     })
 };
 

@@ -1,30 +1,27 @@
 /**
  * Created by Phaeton on 21.05.2016.
  */
+var errors = require("errors/errors");
 var handle = require("handlers/handler");
-var handleError = require("handlers/errorHandler")
+var handleError = require("handlers/errorHandler");
 var url = require("url");
 var log = require("lib/log")(module);
-var pathMod = require("path");
-var fs = require("fs");
-
-var paths = {
-    "/public": true,
-    "/templates": true
-};
+var checkPath = require("lib/checkPath");
 
 module.exports = function (req, res) {
     var reqParsed = url.parse(req.url);
     var pathname = reqParsed.pathname;
     var pathnameParsed = "/" + pathname.split("/")[1];
+    var filePath;
 
     log.debug(req.method + " " + pathname);
 
+    var parameters = {
+        req: req,
+        res: res
+    };
+
     if (handle[pathname] instanceof Function) {
-        var parameters = {
-            req: req,
-            res: res
-        };
         try{
             handle[pathname](parameters);
         }
@@ -32,11 +29,7 @@ module.exports = function (req, res) {
             handleError(error, parameters);
         };
     }
-    else if (handle[pathnameParsed] instanceof Function) {
-        var parameters = {
-            req: req,
-            res: res
-        };
+    else if (~pathname.indexOf(":") && handle[pathnameParsed] instanceof Function) {
         try{
             handle[pathnameParsed](pathname, parameters);
         }
@@ -44,49 +37,15 @@ module.exports = function (req, res) {
             handleError(error, parameters);
         };
     }
-    else if (pathname = checkPath(pathname)) {
-        var parameters = {
-            req: req,
-            res: res
-        };
-        handle.file(pathname, parameters);
+    else if (handle[pathnameParsed] instanceof Function && (filePath = checkPath(extractFilePath(pathname, pathnameParsed))) ||
+        (filePath = checkPath(pathname))) {
+        handle.file(filePath, parameters);
     }
     else {
-        res.statusCode = 400;
-        res.end ("Bad request");
+        handleError(new errors.RequestError(400), parameters);
     };
 };
 
-function checkPath (pathname) {
-    //decode pathname
-    try {
-        pathname = decodeURIComponent(pathname);
-    }
-    catch (e) {
-        return false;
-    };
-
-    //check for zero byte the in request
-    if (~pathname.indexOf("\0")) return false;
-
-    //gather full path
-    pathname = pathMod.normalize(pathMod.join(__dirname + "/..", pathname));
-
-    for (var path in paths) {
-        //find the path among the allowed paths
-        if (pathname.indexOf(pathMod.join(__dirname + "/..", path)) === 0) {
-            //check, if the file exists and is a file
-            var statCorrect = true;
-            fs.stat (pathname, function (err, stats) {
-                if (err || !stats.isFile()) {
-                    statCorrect = false;
-                }
-            });
-            
-            if (statCorrect) return pathname;
-            else return false;
-        };
-    };
-
-    return false;
+function extractFilePath(path, reqStr) {
+    return path.slice(reqStr.length);
 };

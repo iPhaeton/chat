@@ -6,6 +6,7 @@ var http = require("http");
 
 //Request errors
 function RequestError (statusCode, message) {
+    Error.apply(this, arguments);
     this.statusCode = statusCode;
     this.message = message || http.STATUS_CODES[statusCode] || "Error";
     Error.captureStackTrace(this, RequestError);
