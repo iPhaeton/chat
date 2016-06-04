@@ -3,6 +3,8 @@
  */
 var util = require("util");
 var http = require("http");
+var log = require("lib/log")(module);
+var handle = require("handlers/handler");
 
 //Request errors
 function RequestError (statusCode, message) {
@@ -14,8 +16,14 @@ function RequestError (statusCode, message) {
 util.inherits(RequestError, Error);
 RequestError.prototype.name = "RequestError";
 
+RequestError.prototype.send = function (parameters) {
+    log.error (this.stack);
+    handle.file("templates/error.jade", parameters, {message: this.statusCode + " " + this.message, content: "Sorry, an error occured"});
+};
+
 //Config errors
 function ConfigError (property) {
+    Error.apply(this, arguments);
     this.property = property;
     this.message = "Config error";
     Error.captureStackTrace(this, ConfigError);

@@ -1,6 +1,3 @@
-/**
- * Created by Phaeton on 21.05.2016.
- */
 var errors = require("errors/errors");
 var handleError = require("handlers/errorHandler");
 var url = require("url");
@@ -8,6 +5,7 @@ var fs = require("fs");
 var jade = require("jade");
 var User = require("models/user").User;
 var checkPath = require("lib/checkPath");
+var ObjectID = require("mongodb").ObjectID;
 
 function sendFile(path, parameters, outputOptions) {
     var file = new fs.ReadStream(path);
@@ -86,13 +84,18 @@ function findUsers(parameters) {
 
 function findUser (path, parameters) {
     var res = parameters.res;
-    var id = path.split(":")[1];
+    try {
+        var id = new ObjectID(path.split(":")[1]);
+    } catch (err) {
+        handleError(new errors.RequestError(404, "User not found. Wrong ID"), parameters);
+        return;
+    };
 
     User.findById(id, function (err, user) {
-        if (err) handleError(err);
-        if (!user) handleError(new errors.RequestError(404, "User not found"), parameters);
+        if (err) handleError(err, parameters);
+        else if (!user) handleError(new errors.RequestError(404, "User not found"), parameters);
         else res.end(prettifyJson(user));
-    })
+    });
 };
 
 function prettifyJson (obj) {

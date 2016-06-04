@@ -1,6 +1,7 @@
 var http = require("http");
 var log = require("lib/log")(module);
 var handle = require("handlers/handler");
+var errors = require("errors/errors");
 
 module.exports = function (error, parameters) {
     var res = parameters.res;
@@ -13,15 +14,20 @@ module.exports = function (error, parameters) {
         return;
     };
 
-    //if (error.statusCode) res.statusCode = error.statusCode;
-    parameters.statusCode = error.statusCode;
+    parameters.statusCode = error.statusCode || 500;
+    log.error (error.stack);
 
-    if (process.env.NODE_ENV === "development") {
-        log.error (error.stack);
-        handle.file("templates/error.jade", parameters, {message: error.message, stack: prttifyStack(error.stack)});
+    if (error instanceof errors.RequestError) {
+        error.send(parameters);
     } else {
-        log.error(error.stack);
-        handle.file("templates/error.jade", parameters, {message: error.message});
+        if (process.env.NODE_ENV === "development") {
+            handle.file("templates/error.jade", parameters, 
+                {message: parameters.statusCode + " " + error.message, 
+                 stack: prttifyStack(error.stack)});
+        } else {
+            error = new errors.RequestError(500);
+            error.send();
+        };
     };
 };
 
