@@ -4,8 +4,11 @@ var url = require("url");
 var fs = require("fs");
 var jade = require("jade");
 var User = require("models/user").User;
+var Session = require("models/session").Session;
 var checkPath = require("lib/checkPath");
 var ObjectID = require("mongodb").ObjectID;
+var Cookies = require("cookies");
+var config = require("config");
 
 function sendFile(path, parameters, outputOptions) {
     var file = new fs.ReadStream(path);
@@ -119,9 +122,82 @@ function prettifyJson (obj) {
 };
 
 //-------------------------------------------------------------------------------------------------------
+function sessionHandler(parameters) {
+    var req = parameters.req,
+        res = parameters.res;
+
+    var cookies = new Cookies(req, res, {"keys": [config.get("session:key")]});
+
+    try {
+        var id = cookies.get(config.get("session:name"), {signed: true});
+    } catch (err) {
+        var id = undefined;
+    };
+
+    if (id) {
+        Session.findById(id, function (err, session) {
+            if (err) {
+                handleError(err, parameters);
+                return;
+            };
+
+            if (session) {
+                session.set("data.visits", session.data.visits + 1);
+                session.save (function (err) {
+                    if (err) {
+                        handleError(err, parameters);
+                        return;
+                    };
+                });
+                res.end("Session:" + session._id + ", " + session.created + ", visits: " + session.data.visits);
+            }
+            else {
+                session = new Session({
+                    data: {
+                        visits: 1
+                    },
+                    created: new Date()
+                });
+
+                session.save(function (err) {
+                    if (err) {
+                        handleError(err, parameters);
+                        return;
+                    };
+
+                    cookies.set(config.get("session:name"), session._id, config.get("session:cookie"));
+
+                    res.end("Session created");
+                });
+            }
+        });
+    } else {
+        var session = new Session({
+            data: {
+                visits: 1
+            },
+            created: new Date()
+        });
+
+        session.save(function (err) {
+            if (err) {
+                handleError(err, parameters);
+                return;
+            };
+
+            cookies.set(config.get("session:name"), session._id, config.get("session:cookie"));
+
+            res.end("Session created");
+        });
+    };
+};
+
+//-------------------------------------------------------------------------------------------------------
 exports["/"] = sendIndex;
 exports["/forbidden"] = handleForbiddenURL;
 exports["/users"] = findUsers;
 exports["/user"]  = findUser;
+
+exports["/session"] = sessionHandler;
 
 exports.file = sendFile;

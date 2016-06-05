@@ -1,5 +1,6 @@
 {
   "port": 3000,
+
   "mongoose": {
     "uri": "mongodb://localhost/chat",
     "options": {
@@ -8,6 +9,16 @@
           "keepAlive": 1
         }
       }
+    }
+  },
+
+  "session": {
+    "key": "whoFramedRogerRabbit",
+    "name": "sid",
+    "cookie": {
+      "path": "/",
+      "httpOnly": true,
+      "maxAge": null
     }
   }
 }

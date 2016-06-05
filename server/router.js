@@ -7,6 +7,9 @@ var handleError = require("handlers/errorHandler");
 var url = require("url");
 var log = require("lib/log")(module);
 var checkPath = require("lib/checkPath");
+var mongoose = require("lib/mongoose");
+
+//var checkDB = true;
 
 module.exports = function (req, res) {
     var reqParsed = url.parse(req.url);
@@ -49,3 +52,23 @@ module.exports = function (req, res) {
 function extractFilePath(path, reqStr) {
     return path.slice(reqStr.length);
 };
+
+//delete old sessions
+setTimeout(function () {
+    mongoose.models.Session.find({}, function (err, sessions) {
+        if (err) {
+            handleError(err);
+            return;
+        };
+
+        var currentDate = new Date();
+
+        sessions.forEach (function (session) {
+            if (currentDate - session.created > 1209600000) { //two weeks
+                mongoose.models.Session.remove ({_id: session._id}, function (err) {
+                    if (err) return handleError(err);
+                });
+            }
+        })
+    });
+}, 300000);
