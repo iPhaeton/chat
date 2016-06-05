@@ -152,44 +152,34 @@ function sessionHandler(parameters) {
                 res.end("Session:" + session._id + ", " + session.created + ", visits: " + session.data.visits);
             }
             else {
-                session = new Session({
-                    data: {
-                        visits: 1
-                    },
-                    created: new Date()
-                });
-
-                session.save(function (err) {
-                    if (err) {
-                        handleError(err, parameters);
-                        return;
-                    };
-
-                    cookies.set(config.get("session:name"), session._id, config.get("session:cookie"));
-
-                    res.end("Session created");
-                });
+                createSession(cookies, parameters);
             }
         });
     } else {
-        var session = new Session({
-            data: {
-                visits: 1
-            },
-            created: new Date()
-        });
-
-        session.save(function (err) {
-            if (err) {
-                handleError(err, parameters);
-                return;
-            };
-
-            cookies.set(config.get("session:name"), session._id, config.get("session:cookie"));
-
-            res.end("Session created");
-        });
+        createSession(cookies, parameters);
     };
+};
+
+function createSession(cookies, parameters) {
+    var res = parameters.res;
+
+    var session = new Session({
+        data: {
+            visits: 1
+        },
+        created: new Date()
+    });
+
+    session.save(function (err) {
+        if (err) {
+            handleError(err, parameters);
+            return;
+        };
+
+        cookies.set(config.get("session:name"), session._id, config.get("session:cookie"));
+
+        res.end("Session created");
+    });
 };
 
 //-------------------------------------------------------------------------------------------------------
