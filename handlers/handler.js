@@ -9,6 +9,8 @@ var checkPath = require("lib/checkPath");
 var ObjectID = require("mongodb").ObjectID;
 var Cookies = require("cookies");
 var config = require("config");
+var waterfall = require("lib/waterfall");
+var http = require("http");
 
 function sendFile(path, parameters, outputOptions) {
     var file = new fs.ReadStream(path);
@@ -65,14 +67,52 @@ function getType (ext) {
 };
 
 function sendIndex(parameters) {
-    sendFile("templates/index.jade", parameters, {});
+    var req = parameters.req;
+
+    sendFile("templates/index.jade", parameters, {user: req.user});
+};
+
+function sendLoginPage(parameters) {
+    var req = parameters.req;
+
+    if (req.method === "GET") sendFile("templates/login.jade", parameters, {user: req.user});
+    else if (req.method === "POST") authorize(parameters);
+}
+
+function sendChatPage(parameters) {
+    var req = parameters.req;
+
+    if (!req.session.data || !req.session.data.user) {
+        handleError(new errors.RequestError(401, "You are not authorized"), parameters);
+        return;
+    }
+
+    sendFile("templates/chat.jade", parameters, {user: req.user});
+};
+
+function logout(parameters) {
+    var req = parameters.req,
+        res = parameters.res;
+
+    if(req.method !== "POST") {
+        res.end();
+        return;
+    };
+
+    Session.remove({_id: req.session._id}, function (err) {
+        if (err) {
+            handleError(err);
+            return;
+        };
+        res.end();
+    });
 };
 
 function handleForbiddenURL(parameters) {
     throw new errors.RequestError(401, "Access denied");
 };
 
-//---------------------------------------------------------------------------------------------------------------
+//axillaries------------------------------------------------------------------------------------------------
 function findUsers(parameters) {
     if (!(parameters instanceof Object)) throw new errors.RequestError(400, "Bad request");
 
@@ -121,8 +161,52 @@ function prettifyJson (obj) {
     return str.join("").slice(0, -5);
 };
 
-//-------------------------------------------------------------------------------------------------------
-function sessionHandler(parameters) {
+function parsePost(url) {
+    url = url.split("&");
+
+    var obj = {};
+
+    url.forEach(function (item) {
+        item = item.split("=");
+        obj[item[0]] = item[1];
+    });
+
+    return obj;
+};
+
+//Authorization----------------------------------------------------------------------------------------------------
+function authorize (parameters) {
+    var req = parameters.req,
+        res = parameters.res,
+        body = "";
+
+    req.on("data", function (chunk) {
+        body += chunk;
+    });
+
+    req.on("end", function () {
+        var request = parsePost(body);
+        User.authorize(request.username, request.password, function (err, user) {
+            if (err) {
+                if (err instanceof errors.AuthError) {
+                    handleError(new errors.RequestError(403, err.message), parameters);
+                } else {
+                    handleError(err, parameters);
+                }
+                return;
+            };
+            req.session.writeData("user", user._id);
+            res.end();
+        });
+    });
+
+    req.on("error", function () {
+        handleError(500, parameters);
+    })
+};
+
+//Sessions----------------------------------------------------------------------------------------
+function sessionHandler(parameters, resolve, reject) {
     var req = parameters.req,
         res = parameters.res;
 
@@ -137,57 +221,52 @@ function sessionHandler(parameters) {
     if (id) {
         Session.findById(id, function (err, session) {
             if (err) {
-                handleError(err, parameters);
+                reject(err);
                 return;
             };
 
             if (session) {
-                session.set("data.visits", session.data.visits + 1);
-                session.save (function (err) {
-                    if (err) {
-                        handleError(err, parameters);
-                        return;
-                    };
-                });
-                res.end("Session:" + session._id + ", " + session.created + ", visits: " + session.data.visits);
+                req.session = session;
+                resolve();
             }
             else {
-                createSession(cookies, parameters);
+                createSession(cookies, parameters, resolve, reject);
             }
         });
     } else {
-        createSession(cookies, parameters);
+        createSession(cookies, parameters, resolve, reject);
     };
 };
 
-function createSession(cookies, parameters) {
-    var res = parameters.res;
+function createSession(cookies, parameters, resolve, reject) {
+    var res = parameters.res,
+        req = parameters.req;
 
     var session = new Session({
-        data: {
-            visits: 1
-        },
+        data: {},
         created: new Date()
     });
 
     session.save(function (err) {
         if (err) {
-            handleError(err, parameters);
-            return;
+            reject(err);
         };
-
+        
         cookies.set(config.get("session:name"), session._id, config.get("session:cookie"));
-
-        res.end("Session created");
+        req.session = session;
+        resolve();
     });
 };
 
 //-------------------------------------------------------------------------------------------------------
 exports["/"] = sendIndex;
+exports["/login"] = sendLoginPage;
+exports["/chat"] = sendChatPage;
+exports["/logout"] = logout;
 exports["/forbidden"] = handleForbiddenURL;
 exports["/users"] = findUsers;
 exports["/user"]  = findUser;
 
-exports["/session"] = sessionHandler;
+exports.session = sessionHandler;
 
 exports.file = sendFile;

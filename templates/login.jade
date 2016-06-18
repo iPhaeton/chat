@@ -1,0 +1,23 @@
+extends /layouts/page.jade
+
+block title
+    |Register and sign in
+
+block content
+    |Enter your name and password. If user with this is not found, a new account will be created
+    form(class="form-horizontal login-form" name="login-form")
+        div(class="form-group")
+            label(for="input-username" class="col-lg-2 control-label") Name
+            div(class="col-lg-10")
+                input(name="username" value="Name" type="text" class="form-control" id="input-username" placeholder="Name")
+        div(class="form-group")
+            label(for="input-password" class="col-lg-2 control-label") Password
+            div(class="col-lg-10")
+                input(name="password" value="Password" type="text" class="form-control" id="input-password" placeholder="Password")
+        div(class="form-group")
+            div(class="col-lg-pffset-2 col-lg-10")
+                button(type="submit" class="btn btn-primary" data-loading-text="Sending...") Sign In
+                span(class="help-block error")
+
+block script
+    script(src='public/js/clientLogin.js')

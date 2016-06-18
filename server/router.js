@@ -8,10 +8,11 @@ var url = require("url");
 var log = require("lib/log")(module);
 var checkPath = require("lib/checkPath");
 var mongoose = require("lib/mongoose");
+var User = require("models/user").User;
 
 //var checkDB = true;
 
-module.exports = function (req, res) {
+module.exports = function /*route */(req, res) {
     var reqParsed = url.parse(req.url);
     var pathname = reqParsed.pathname;
     var pathnameParsed = "/" + pathname.split("/")[1];
@@ -24,29 +25,63 @@ module.exports = function (req, res) {
         res: res
     };
 
-    if (handle[pathname] instanceof Function) {
-        try{
-            handle[pathname](parameters);
-        }
-        catch (error) {
+    var waitForSession = new Promise((resolve, reject) => {
+        "use strict";
+        handle.session(parameters, resolve, reject);
+    });
+
+    waitForSession.then(result => {
+        "use strict";
+        var waitForUser = new Promise((resolve, reject) => {
+            req.user = null;
+
+            if (!req.session.data) resolve();
+            if (!req.session.data.user) resolve();
+
+            User.findById(req.session.data.user, function (err, user) {
+                if (err) {
+                    reject(err);
+                    return;
+                };
+                req.user = user;
+                resolve();
+            });
+        });
+
+        waitForUser.then(result => {
+            "use strict";
+            if (handle[pathname] instanceof Function) {
+                try{
+                    handle[pathname](parameters);
+                }
+                catch (error) {
+                    handleError(error, parameters);
+                };
+            }
+            else if (~pathname.indexOf(":") && handle[pathnameParsed] instanceof Function) {
+                try{
+                    handle[pathnameParsed](pathname, parameters);
+                }
+                catch (error) {
+                    handleError(error, parameters);
+                };
+            }
+            //pass only files, which were asked for by a page
+            else if (handle[pathnameParsed] instanceof Function && (filePath = checkPath(extractFilePath(pathname, pathnameParsed))) ||
+                (filePath = checkPath(pathname))) {
+                handle.file(filePath, parameters);
+            }
+            else {
+                handleError(new errors.RequestError(400), parameters);
+            };
+        },
+        error => {
             handleError(error, parameters);
-        };
-    }
-    else if (~pathname.indexOf(":") && handle[pathnameParsed] instanceof Function) {
-        try{
-            handle[pathnameParsed](pathname, parameters);
-        }
-        catch (error) {
-            handleError(error, parameters);
-        };
-    }
-    else if (handle[pathnameParsed] instanceof Function && (filePath = checkPath(extractFilePath(pathname, pathnameParsed))) ||
-        (filePath = checkPath(pathname))) {
-        handle.file(filePath, parameters);
-    }
-    else {
-        handleError(new errors.RequestError(400), parameters);
-    };
+        });
+    },
+    error => {
+        handleError(error, parameters);
+    });
 };
 
 function extractFilePath(path, reqStr) {
@@ -72,3 +107,5 @@ setTimeout(function () {
         })
     });
 }, 300000);
+
+//exports.route = route;

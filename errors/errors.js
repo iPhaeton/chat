@@ -17,9 +17,18 @@ util.inherits(RequestError, Error);
 RequestError.prototype.name = "RequestError";
 
 RequestError.prototype.send = function (parameters) {
-    log.error (this.stack);
+    //log.error (this.stack);
     handle.file("templates/error.jade", parameters, {message: this.statusCode + " " + this.message, content: "Sorry, an error occured"});
 };
+
+//Authentication errors
+function AuthError (message) {
+    Error.apply(this, arguments);
+    this.message = message;
+    Error.captureStackTrace(this, AuthError);
+};
+util.inherits(AuthError, Error);
+AuthError.prototype.name = "AuthError";
 
 //Config errors
 function ConfigError (property) {
@@ -45,6 +54,8 @@ function WrongConfig (property) {
 util.inherits(WrongConfig, ConfigError);
 WrongConfig.prototype.name = "WrongConfig";
 
+//------------------------------------------------------------------------------------------------------------
 exports.RequestError = RequestError;
+exports.AuthError = AuthError;
 exports.MissingConfig = MissingConfig;
 exports.WrongConfig = WrongConfig;

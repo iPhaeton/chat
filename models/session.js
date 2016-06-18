@@ -1,3 +1,5 @@
+var handleError = require("handlers/errorHandler");
+
 var mongoose = require("lib/mongoose");
 
 Schema = mongoose.Schema;
@@ -29,5 +31,12 @@ var schema = new Schema ({
     data: Object
 
 });
+
+schema.methods.writeData = function (property, value) {
+    this.set("data."+property, value);
+    this.save(function (err) {
+        if (err) handleError(err);
+    })
+};
 
 exports.Session = mongoose.model ("Session", schema);

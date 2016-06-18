@@ -1,0 +1,14 @@
+nav(class="navbar navbar-default")
+    ul(class="nav navbar-nav")
+        li
+            a(href="/") Main page
+        -if(user)
+            li
+                a(href="/chat") Chat
+    ul(class="nav navbar-nav navbar-right")
+        -if(user)
+            li
+                a(id="logout" href="") Sign Out
+        -else
+            li
+                a(href="/login") Sign In

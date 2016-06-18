@@ -3,6 +3,8 @@
  */
 var crypto = require("crypto");
 var mongoose = require("lib/mongoose");
+var waterfall = require("lib/waterfall");
+var errors = require("errors/errors");
 
 Schema = mongoose.Schema;
 
@@ -38,6 +40,31 @@ schema.virtual("password")
 
 schema.methods.checkPassword = function (password) {
     return this.encryptPassword(password ) === this.hashedPassword;
+};
+
+schema.statics.authorize = function (username, password, onResult) {
+    var User = this;
+
+    waterfall([
+        function (callback) {
+            User.findOne({username: username}, callback);
+        },
+        function (user, callback) {
+            if(user){
+                if(user.checkPassword(password)) {
+                    callback(null, user);
+                } else {
+                    callback(new errors.AuthError("Wrong password"));
+                }
+            } else {
+                var user = new User ({username: username, password: password});
+                user.save (function (err) {
+                    if (err) callback(err);
+                    else callback(null, user);
+                });
+            };
+        }
+    ], onResult);
 };
 
 exports.User = mongoose.model ("User", schema);

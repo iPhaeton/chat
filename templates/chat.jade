@@ -1,0 +1,14 @@
+extends /layouts/page.jade
+
+block title
+    |Chat
+
+block content
+    |Hello,
+    -if(user)
+        !=" " + user.get("username")
+    br
+    |Here is going to be chat
+
+block script
+    script(src='public/js/clientLogout.js')
