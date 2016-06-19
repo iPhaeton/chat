@@ -7,8 +7,13 @@ block content
     |Hello,
     -if(user)
         !=" " + user.get("username")
-    br
-    |Here is going to be chat
+    div(id="room")
+        ul
+        form
+            input(name="input" class="form-control" autocomplete="off" autofocus placeholder="Message")
+    div(id="status")
+        ul
 
 block script
     script(src='public/js/clientLogout.js')
+    script(src='public/js/clientChat.js')
