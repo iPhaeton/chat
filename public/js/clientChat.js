@@ -4,10 +4,14 @@ var chat = document.querySelector("#room ul");
 
 var socket;
 
+var reconnectionCount = 1,
+    MAX_RECONNECTION_COUNT = 10;
+
 function connect () {
     socket = new WebSocket("ws://" + window.location.hostname + ":8081");
 
     socket.addEventListener("open", function () {
+        reconnectionCount = 1;
         showStatus("Connected");
     });
 
@@ -23,8 +27,14 @@ function connect () {
         if(event.wasClean) {
             showStatus("Connection closed");
         } else {
+            if (reconnectionCount > MAX_RECONNECTION_COUNT) {
+                showStatus("Connection is lost forever");
+                return;
+            }
+
             showStatus("Connection lost, trying to connect...");
-            setTimeout(connect, 5000);
+            setTimeout(connect, 1000 * reconnectionCount);
+            reconnectionCount++;
         };
     });
 };
