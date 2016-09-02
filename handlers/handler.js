@@ -99,12 +99,20 @@ function logout(parameters) {
         return;
     };
 
-    Session.remove({_id: req.session._id}, function (err) {
+    var sid = req.session._id;
+
+    Session.remove({_id: sid}, function (err) {
         if (err) {
             handleError(err);
             return;
         };
         res.end();
+
+        for (var id in sockets) {
+            if (sid.id === sockets[id].session._id.id) {
+                sockets[id].socket.close();
+            };
+        };
     });
 };
 

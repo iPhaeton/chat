@@ -8,7 +8,7 @@ var reconnectionCount = 1,
     MAX_RECONNECTION_COUNT = 10;
 
 function connect () {
-    socket = new WebSocket("ws://" + window.location.hostname + ":8081");
+    socket = new WebSocket("ws://" + window.location.hostname + ":3000");
 
     socket.addEventListener("open", function () {
         reconnectionCount = 1;
@@ -26,6 +26,12 @@ function connect () {
     socket.addEventListener("close", function (event) {
         if(event.wasClean) {
             showStatus("Connection closed");
+
+            var logoutForm = document.createElement("form");
+
+            logoutForm.method = "GET";
+            logoutForm.action = "/";
+            logoutForm.submit();
         } else {
             if (reconnectionCount > MAX_RECONNECTION_COUNT) {
                 showStatus("Connection is lost forever");
