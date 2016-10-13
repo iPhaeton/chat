@@ -11,6 +11,7 @@ var Cookies = require("cookies");
 var config = require("config");
 var waterfall = require("lib/waterfall");
 var http = require("http");
+var path = require("path");
 
 function sendFile(path, parameters, outputOptions) {
     var file = new fs.ReadStream(path);
@@ -69,13 +70,13 @@ function getType (ext) {
 function sendIndex(parameters) {
     var req = parameters.req;
 
-    sendFile("templates/index.jade", parameters, {user: req.user});
+    sendFile(path.resolve(__dirname, "../templates/index.jade"), parameters, {user: req.user});
 };
 
 function sendLoginPage(parameters) {
     var req = parameters.req;
 
-    if (req.method === "GET") sendFile("templates/login.jade", parameters, {user: req.user});
+    if (req.method === "GET") sendFile(path.resolve(__dirname, "../templates/login.jade"), parameters, {user: req.user});
     else if (req.method === "POST") authorize(parameters);
 }
 
@@ -87,7 +88,7 @@ function sendChatPage(parameters) {
         return;
     }
 
-    sendFile("templates/chat.jade", parameters, {user: req.user});
+    sendFile(path.resolve(__dirname, "../templates/chat.jade"), parameters, {user: req.user});
 };
 
 function logout(parameters) {
