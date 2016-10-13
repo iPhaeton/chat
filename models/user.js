@@ -54,8 +54,25 @@ schema.statics.authorize = function (username, password, onResult) {
                 if(user.checkPassword(password)) {
                     callback(null, user);
                 } else {
-                    callback(new errors.AuthError("Wrong password"));
+                    callback(new errors.AuthError("Wrong login or password"));
                 }
+            } else {
+                callback(new errors.AuthError("Wrong login or password"));
+            };
+        }
+    ], onResult);
+};
+
+schema.statics.signup = function (username, password, onResult) {
+    var User = this;
+
+    waterfall([
+        function (callback) {
+            User.findOne({username: username}, callback);
+        },
+        function (user, callback) {
+            if(user){
+                callback(new errors.AuthError("This user already exists"));
             } else {
                 var user = new User ({username: username, password: password});
                 user.save (function (err) {
@@ -66,5 +83,6 @@ schema.statics.authorize = function (username, password, onResult) {
         }
     ], onResult);
 };
+
 
 exports.User = mongoose.model ("User", schema);

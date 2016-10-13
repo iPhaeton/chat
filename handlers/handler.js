@@ -78,6 +78,12 @@ function sendLoginPage(parameters) {
 
     if (req.method === "GET") sendFile(path.resolve(__dirname, "../templates/login.jade"), parameters, {user: req.user});
     else if (req.method === "POST") authorize(parameters);
+};
+
+function sendSignupPage(parameters) {
+    var req = parameters.req;
+
+    if (req.method === "POST") signup(parameters);
 }
 
 function sendChatPage(parameters) {
@@ -214,6 +220,36 @@ function authorize (parameters) {
     })
 };
 
+function signup (parameters) {
+    var req = parameters.req,
+        res = parameters.res,
+        body = "";
+
+    req.on("data", function (chunk) {
+        body += chunk;
+    });
+
+    req.on("end", function () {
+        var request = parsePost(body);
+        User.signup(request.username, request.password, function (err, user) {
+            if (err) {
+                if (err instanceof errors.AuthError) {
+                    handleError(new errors.RequestError(403, err.message), parameters);
+                } else {
+                    handleError(err, parameters);
+                }
+                return;
+            };
+            req.session.writeData("user", user._id);
+            res.end();
+        });
+    });
+
+    req.on("error", function () {
+        handleError(500, parameters);
+    })
+};
+
 //Sessions----------------------------------------------------------------------------------------
 function sessionHandler(parameters, resolve, reject) {
     var req = parameters.req,
@@ -270,6 +306,7 @@ function createSession(cookies, parameters, resolve, reject) {
 //-------------------------------------------------------------------------------------------------------
 exports["/"] = sendIndex;
 exports["/login"] = sendLoginPage;
+exports["/signup"] = sendSignupPage;
 exports["/chat"] = sendChatPage;
 exports["/logout"] = logout;
 exports["/forbidden"] = handleForbiddenURL;

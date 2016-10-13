@@ -8,7 +8,7 @@ nav(class="navbar navbar-default")
     ul(class="nav navbar-nav navbar-right")
         -if(user)
             li
-                a(id="logout" href="") Sign Out
+                a(id="logout" href="" class="top-sign") Sign Out
         -else
             li
-                a(href="/login") Sign In
+                a(href="/login" class="top-sign") Sign In
