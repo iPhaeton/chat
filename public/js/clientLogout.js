@@ -1,19 +1,22 @@
-var logout = document.getElementById("logout");
-logout.onclick = function (event) {
-    var xhrLogout = new XMLHttpRequest();
+var logout = document.querySelector("#logout");
 
-    xhrLogout.onload = xhrLogout.onerror = function () {
-        if (this.status === 200) {
-            var logoutForm = document.createElement("form");
+if (logout) {
+    logout.onclick = function (event) {
+        event.preventDefault();
 
-            logoutForm.method = "GET";
-            logoutForm.action = "/";
-            logoutForm.submit();
+        var xhrLogout = new XMLHttpRequest();
+
+        xhrLogout.onload = xhrLogout.onerror = function () {
+            if (this.status === 200) {
+                var logoutForm = document.createElement("form");
+
+                logoutForm.method = "GET";
+                logoutForm.action = "/";
+                logoutForm.submit();
+            };
         };
+
+        xhrLogout.open("POST", "/logout", true);
+        xhrLogout.send();
     };
-
-    xhrLogout.open("POST", "/logout", true);
-    xhrLogout.send();
-
-    return false;
 };
