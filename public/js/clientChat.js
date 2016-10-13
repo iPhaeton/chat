@@ -8,7 +8,11 @@ var reconnectionCount = 1,
     MAX_RECONNECTION_COUNT = 10;
 
 function connect () {
-    socket = new WebSocket("ws://" + window.location.hostname + ":3000");
+    var url = window.location.origin.replace(/^http(s)?:\/\//, function (match) {
+        return match === "https://" ? "wss://" : "ws://";
+    });
+    
+    socket = new WebSocket(url);
 
     socket.addEventListener("open", function () {
         reconnectionCount = 1;

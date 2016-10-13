@@ -13,6 +13,8 @@ var User = require("models/user").User;
 //var checkDB = true;
 
 module.exports = function /*route */(req, res) {
+    console.log(req.url);
+    
     var reqParsed = url.parse(req.url);
     var pathname = reqParsed.pathname;
     var pathnameParsed = "/" + pathname.split("/")[1];
