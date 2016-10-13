@@ -12,7 +12,7 @@ function run() {
     log.info("Server is running");
     server = http.createServer(function (req, res) {
         route(req, res);
-    }).listen(config.get("port", "isNumeric"));
+    }).listen(process.env.PORT || config.get("port"), process.env.IP || "0.0.0.0");
 
     require("../socket")(server);
 };
